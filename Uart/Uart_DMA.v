@@ -52,13 +52,14 @@ module Uart_DMA(
 /******************************reg********************************/
 reg  [7 :0]     ro_usr_tx_data      ;
 reg             ro_usr_tx_valid     ;
-reg             ri_usr_tx_ready     ;
+
 reg  [7 :0]     ri_usr_rx_data      ;
 reg             ri_usr_rx_valid     ;
+
 reg  [7 :0]     ro_uart_DMA_rdata   ;
 reg             ro_uart_DMA_rlast   ;
 reg             ro_uart_DMA_rvalid  ;
-reg             ro_uart_DMA_tready  ;
+//reg             ro_uart_DMA_tready  ;
 reg  [7 :0]     ro_uart_DMA_rlen    ;
 
 reg  [7 :0]     r_recv_cnt          ; 
@@ -71,11 +72,7 @@ reg             r_rx_fifo_rden      ;
 reg             r_rx_fifo_rden_1d   ;
 reg  [7 :0]     r_rx_fifo_send_cnt  ;
 
-// reg             r_send_run          ;
-// reg  [7 :0]     r_send_len          ;
-// reg  [7 :0]     r_send_cnt          ;
 reg  [7 :0]     r_uart_send_cnt     ;
-// reg             r_uart_tx_active    ;
 
 reg             r_tx_fifo_rden      ;
 reg             r_tx_fifo_rden_1d   ;
@@ -126,7 +123,7 @@ assign  o_uart_DMA_tready   =   !w_tx_fifo_full     ;
 assign  w_send_active       =   i_uart_DMA_tvalid & o_uart_DMA_tready;
 assign  w_uart_tx_active    =   o_usr_tx_valid & i_usr_tx_ready;
 /******************************always*****************************/
-/*--------recieve data--------*/
+/*==============================recieve data====================================*/
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         ri_usr_rx_data  <= 'd0;
@@ -172,7 +169,7 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_recv_end <= r_recv_end;
 end
-
+//记录保存当前接收数据包长度，直到下一包数据进来才会被修改
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_recv_end_len <= 'd0;
@@ -181,13 +178,12 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_recv_end_len <= r_recv_end_len;
 end
-//如果在第一个数据还没有传输完情况下又来了俩个以上的数据，此时会有bug应该
+//如果在第一个数据还没有传输完情况下又来了俩个以上的数据包，此时会有bug应该
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_send_trigger <= 'd0;
     else if(r_send_trigger)
         r_send_trigger <= 'd0;
-    // else if(!r_rx_fifo_rden && r_recv_end)
     else if(!ro_uart_DMA_rvalid && r_recv_end)
         r_send_trigger <= 'd1;
     else
@@ -244,7 +240,6 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_uart_DMA_rlast <= 'd0;
-    //else if(r_rx_fifo_send_cnt == r_recv_end_len - 2)
     else if(!r_rx_fifo_rden && r_rx_fifo_rden_1d)
         ro_uart_DMA_rlast <= 'd1;
     else
@@ -260,7 +255,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_uart_DMA_rlen <= 'd0;
 end
 
-/*--------send data--------*/
+/*=============================send data================================*/
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_tx_fifo_rden <= 'd0;
@@ -278,7 +273,7 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_tx_fifo_rden_1d <= r_tx_fifo_rden;
 end
-//数据真正输出会有3周期延迟，需要一个计数器来是的FIFO使能信号正常工作
+//数据真正输出会有3周期延迟，需要一个计数器来使FIFO使能信号正常工作
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_uart_send_cnt <= 'd0;

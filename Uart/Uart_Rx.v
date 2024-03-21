@@ -21,11 +21,11 @@
 
 
 module Uart_Rx#(
-    parameter                          P_UART_CLK         =  250_000_000 , //ÊäÈëÊ±ÖÓÆµÂÊ
-    parameter                          P_UART_BAUDRATE    =  9600        , //²¨ÌØÂÊ
-    parameter                          P_UART_DATA_WIDTH  =  8           , //Êı¾İÎ»¿í
-    parameter                          P_UART_STOP_WIDTH  =  1           , //Í£Ö¹Î»Î»¿í  
-    parameter                          P_UART_CHECK       =  0             //0:ÎŞĞ£Ñé£¬1£ºÆæĞ£Ñé 2£ºÅ¼Ğ£Ñé  
+    parameter                          P_UART_CLK         =  250_000_000 , //è¾“å…¥æ—¶é’Ÿé¢‘ç‡
+    parameter                          P_UART_BAUDRATE    =  9600        , //æ³¢ç‰¹ç‡
+    parameter                          P_UART_DATA_WIDTH  =  8           , //æ•°æ®ä½å®½
+    parameter                          P_UART_STOP_WIDTH  =  1           , //åœæ­¢ä½ä½å®½  
+    parameter                          P_UART_CHECK       =  0             //0:æ— æ ¡éªŒï¼Œ1ï¼šå¥‡æ ¡éªŒ 2ï¼šå¶æ ¡éªŒ  
 )(
     input                              i_clk          ,
     input                              i_rst          ,
@@ -60,7 +60,7 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_uart_rx <= 2'b11;
     else
-        r_uart_rx <= {r_uart_rx[0],i_uart_rx};//r_uart_rx[1]¾ÍÊÇ´òÁ©ÅÄµÄ½á¹û
+        r_uart_rx <= {r_uart_rx[0],i_uart_rx};//r_uart_rx[1]å°±æ˜¯æ‰“ä¿©æ‹çš„ç»“æœ
 end
 
 always @(posedge i_clk or posedge i_rst)begin
@@ -80,8 +80,8 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_usr_rx_data <= 'd0;
     else if(r_cnt >= 1 && r_cnt <= P_UART_DATA_WIDTH)
-        ro_usr_rx_data <= {i_uart_rx,ro_usr_rx_data[P_UART_DATA_WIDTH-1:1]};//ÏÈ·¢µÍÎ»
-        // ro_usr_rx_data <= {ro_usr_rx_data[P_UART_DATA_WIDTH-2:0],r_uart_rx[1]};//ÏÈ·¢¸ßÎ»
+        ro_usr_rx_data <= {i_uart_rx,ro_usr_rx_data[P_UART_DATA_WIDTH-1:1]};//å…ˆå‘ä½ä½
+        // ro_usr_rx_data <= {ro_usr_rx_data[P_UART_DATA_WIDTH-2:0],r_uart_rx[1]};//å…ˆå‘é«˜ä½
     else
         ro_usr_rx_data <= ro_usr_rx_data;
 end
@@ -103,7 +103,7 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rx_check <= 'd0;
     else if(r_cnt >= 1 && r_cnt <= P_UART_DATA_WIDTH)
-        r_rx_check <= r_rx_check ^ i_uart_rx;//Òì»ò½á¹ûÎª1ËµÃ÷1¸öÊıÎªÆæÊı
+        r_rx_check <= r_rx_check ^ i_uart_rx;//å¼‚æˆ–ç»“æœä¸º1è¯´æ˜1ä¸ªæ•°ä¸ºå¥‡æ•°
     else
         r_rx_check <= 'd0;
 end

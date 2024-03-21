@@ -183,9 +183,9 @@ Uart_DMA Uart_DMA_u0(
     .o_uart_DMA_rdata       (w_uart_DMA_rdata   ),
     .o_uart_DMA_rlast       (w_uart_DMA_rlast   ),
     .o_uart_DMA_rvalid      (w_uart_DMA_rvalid  )
-    );
+);
 //跨时钟域处理 uart DMA数据跨到系统参数管理模块
-Data_Mclk_buf Data_Mclk_buf_uart2eeprom(
+Data_Mclk_buf Data_Mclk_buf_uart2bus_mux(
     .i_pre_clk              (w_uart_clk         ),
     .i_pre_rst              (w_uart_rst         ),
     .i_pre_data             (w_uart_DMA_rlen    ),
@@ -193,43 +193,17 @@ Data_Mclk_buf Data_Mclk_buf_uart2eeprom(
     .i_pre_last             (w_uart_DMA_rlast   ),
     .i_pre_valid            (w_uart_DMA_rvalid  ),
 
-    .i_post_clk             (w_clk_125khz       ),
-    .i_post_rst             (w_clk_125khz_rst   ),
-    .o_post_data            (w_pre_cmd_data     ),
-    .o_post_len             (w_pre_cmd_len      ),
-    .o_post_last            (w_pre_cmd_last     ),
-    .o_post_valid           (w_pre_cmd_valid    ) 
+    .i_post_clk             (w_uart_clk         ),
+    .i_post_rst             (w_uart_rst         ),
+    .o_post_data            (w_post_cmd_data    ),
+    .o_post_len             (w_post_cmd_len     ),
+    .o_post_last            (w_post_cmd_last    ),
+    .o_post_valid           (w_post_cmd_valid   ) 
 );
-//系统参数管理
-Parameter_ctrl Parameter_ctrl_u0(
-    .i_clk                  (w_clk_125khz       ),
-    .i_rst                  (w_clk_125khz_rst   ),
-
-    .i_pre_cmd_data         (w_pre_cmd_data     ),
-    .i_pre_cmd_len          (w_pre_cmd_len      ),
-    .i_pre_cmd_last         (w_pre_cmd_last     ),
-    .i_pre_cmd_valid        (w_pre_cmd_valid    ),
-        
-    .o_post_cmd_data        (w_post_cmd_data    ),
-    .o_post_cmd_len         (w_post_cmd_len     ),
-    .o_post_cmd_last        (w_post_cmd_last    ),
-    .o_post_cmd_valid       (w_post_cmd_valid   ),
-
-    .o_system_run           (w_system_run       ),
-    .o_adc_chnnel           (w_adc_chnnel       ),
-    .o_adc_speed            (w_adc_speed        ),
-    .o_adc_start            (w_adc_start        ),
-    .o_adc_trig             (w_adc_trig         ),
-    .o_flash_start          (w_flash_start      ),
-    .o_flash_num            (w_flash_num        ),
-
-    .o_iic_scl              (o_iic_scl          ),
-    .io_iic_sda             (io_iic_sda         ) 
-);
-
+//总线分流器
 BUS_MUX BUS_MUX_u0(
-    .i_clk                  (w_clk_125khz       ),
-    .i_rst                  (w_clk_125khz_rst   ),
+    .i_clk                  (w_uart_clk         ),
+    .i_rst                  (w_uart_rst         ),
 
     .i_cmd_data             (w_post_cmd_data    ),
     .i_cmd_len              (w_post_cmd_len     ),
@@ -250,6 +224,33 @@ BUS_MUX BUS_MUX_u0(
     .o_ctrl_len             (w_cmd_ctrl_len     ),
     .o_ctrl_last            (w_cmd_ctrl_last    ),
     .o_ctrl_valid           (w_cmd_ctrl_valid   ) 
+);
+
+//系统参数管理
+Parameter_ctrl Parameter_ctrl_u0(
+    .i_clk                  (w_clk_125khz       ),
+    .i_rst                  (w_clk_125khz_rst   ),
+
+    .i_pre_cmd_data         (),
+    .i_pre_cmd_len          (),
+    .i_pre_cmd_last         (),
+    .i_pre_cmd_valid        (),
+        
+    .o_post_cmd_data        (),
+    .o_post_cmd_len         (),
+    .o_post_cmd_last        (),
+    .o_post_cmd_valid       (),
+
+    .o_system_run           (w_system_run       ),
+    .o_adc_chnnel           (w_adc_chnnel       ),
+    .o_adc_speed            (w_adc_speed        ),
+    .o_adc_start            (w_adc_start        ),
+    .o_adc_trig             (w_adc_trig         ),
+    .o_flash_start          (w_flash_start      ),
+    .o_flash_num            (w_flash_num        ),
+
+    .o_iic_scl              (o_iic_scl          ),
+    .io_iic_sda             (io_iic_sda         ) 
 );
 
 AD7606_module AD7606_module_u0(
@@ -314,5 +315,5 @@ AD7606_module AD7606_module_u0(
 //     .o_spi_clk              (o_spi_clk          ),
 //     .o_spi_mosi             (o_spi_mosi         ),
 //     .i_spi_miso             (i_spi_miso         )
-// );
+//);
 endmodule

@@ -35,11 +35,11 @@ module AD7606_ctrl(
     input           i_adc_start         ,
     input           i_adc_trig          ,
 
-    output [7 :0]   o_cap_chnnel_num    ,
-    output          o_cap_enable        ,
-    output [23:0]   o_cap_speed         ,
-    output          o_cap_trigger       ,
-    output          o_cap_seek          
+    output [7 :0]   o_cap_chnnel_num    ,//采样通道数
+    output          o_cap_enable        ,//使能
+    output [23:0]   o_cap_speed         ,//采样速率
+    output          o_cap_trigger       ,//触发方式
+    output          o_cap_seek           //查询采样结果
 
 );
 /******************************function***************************/
