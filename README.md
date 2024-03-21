@@ -3,4 +3,6 @@
 模块说明：
 1. CaptureCard_Top：顶层模块，产生相应时钟以及复位，提供设计与外界接口，包括UART、FLASH、EEPROM、AD7606。
 2. Uart_Drive：UART驱动模块，与上位机进行数据交互。
-3. Uart_DMA：
+3. Uart_DMA：将Uart_Drive按字节接收到的数据进行组帧处理，变为与其他模块交互的控制数据流，反方向上，将其他模块发送的数据流转化为按字节发送的形式。
+
+![image](/picture/data_format.png#pic_center) 
