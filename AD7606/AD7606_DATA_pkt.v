@@ -101,7 +101,7 @@ FIFO_8x1024 AD7606_data_pkt(
   .wr_en        (r_ad_pre_valid     ), 
   .rd_en        (r_fifo_rden        ), 
   .dout         (w_fifo_rd_data     ), 
-  .full         (), 
+  .full         (w_fifo_full        ), 
   .empty        (w_fifo_empty       ), 
   .wr_rst_busy  (), 
   .rd_rst_busy  ()  
@@ -162,9 +162,9 @@ always @(posedge i_clk or posedge i_rst)begin
         case (r_cnt)
             0    : r_ad_pre_data <= 8'h55;                                                  //前导码
             1    : r_ad_pre_data <= 'd5;                                                    //指令编号
-            2    : r_ad_pre_data <= ri_cap_chnnel_num+ri_cap_chnnel_num+ri_cap_chnnel_num;  //负载长度
-            3    : r_ad_pre_data <=              1      ;
-            4    : r_ad_pre_data <= ri_user_data_1[15:8];
+            2    : r_ad_pre_data <= ri_cap_chnnel_num+ri_cap_chnnel_num+ri_cap_chnnel_num;  //负载长度,一个通道包括通道号和16bit电压值，所以一共三拍
+            3    : r_ad_pre_data <=              1      ;//通道编号
+            4    : r_ad_pre_data <= ri_user_data_1[15:8];//通道电压值
             5    : r_ad_pre_data <= ri_user_data_1[7 :0];
             6    : r_ad_pre_data <=              2      ;
             7    : r_ad_pre_data <= ri_user_data_2[15:8];
@@ -200,7 +200,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_cnt <= r_cnt + 1;
     else if(r_cnt == 4 && ri_user_valid_1)
         r_cnt <= r_cnt + 1;
-    else if(ri_cap_seek || r_cnt < 4)
+    else if(ri_cap_seek || (r_cnt > 0 && r_cnt < 4))
         r_cnt <= r_cnt + 1;
     else
         r_cnt <= r_cnt;
@@ -211,7 +211,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_ad_pre_valid <= 'd0;
     else if((r_cnt == 4 && !ri_user_valid_1) || r_valid_end)
         r_ad_pre_valid <= 'd0;
-    else if(ri_cap_seek || ri_user_valid_1)
+    else if(ri_cap_seek || (ri_user_valid_1 && r_cnt >= 4))
         r_ad_pre_valid <= 'd1;
     else
         r_ad_pre_valid <= r_ad_pre_valid;
@@ -234,7 +234,7 @@ always @(posedge i_clk or posedge i_rst)begin
     else if(r_valid_end)
         r_fifo_rden <= 'd1;
     else
-        r_fifo_rden <= 'd0;
+        r_fifo_rden <= r_fifo_rden;
 end
 
 always @(posedge i_clk or posedge i_rst)begin
@@ -247,19 +247,27 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         ro_adc_data  <= 'd0;
-        ro_adc_len   <= 'd0;
-        ro_adc_valid <= 'd0;        
+        ro_adc_len   <= 'd0;     
     end
     else if(r_fifo_rden_1d)begin
         ro_adc_data  <= w_fifo_rd_data;
-        ro_adc_len   <= 2 + ri_cap_chnnel_num+ri_cap_chnnel_num+ri_cap_chnnel_num + 1;
-        ro_adc_valid <= 'd1;         
+        ro_adc_len   <= 2 + ri_cap_chnnel_num+ri_cap_chnnel_num+ri_cap_chnnel_num + 1;        
     end
     else begin
         ro_adc_data  <= 'd0;
-        ro_adc_len   <= 'd0;
-        ro_adc_valid <= 'd0;         
+        ro_adc_len   <= 'd0;    
     end
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ro_adc_valid <= 'd0; 
+    else if(ro_adc_last)
+        ro_adc_valid <= 'd0; 
+    else if(r_fifo_rden_1d)
+        ro_adc_valid <= 'd1; 
+    else
+        ro_adc_valid <= 'd0; 
 end
 
 always @(posedge i_clk or posedge i_rst)begin

@@ -118,14 +118,14 @@ always @(posedge i_clk or posedge i_rst)begin
     else if(r_cnt == 1 && ri_cmd_adc_valid)
         r_ctrl_type <= ri_cmd_adc_data;
     else
-        r_ctrl_type <= 'd0;
+        r_ctrl_type <= r_ctrl_type;
 end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_payload_len <= 'd0;
-    else if(r_cnt == 2 && ri_cmd_adc_valid)
-        r_payload_len <= ri_cmd_adc_data;
+    else if(r_cnt == 1 && ri_cmd_adc_valid)
+        r_payload_len <= i_cmd_adc_data;
     else
         r_payload_len <= r_payload_len;
 end
@@ -177,8 +177,10 @@ end
 always @(posedge i_clk or posedge i_rst)begin 
     if(i_rst)
         ro_cap_seek <= 'd0;
+    else if(ro_cap_seek)
+        ro_cap_seek <= 'd0;
     else if(r_ctrl_type == 5 && r_cnt == 2 + r_payload_len && ri_cmd_adc_valid)
-        ro_cap_seek <= ri_cmd_adc_data;
+        ro_cap_seek <= 'd1;
     else
         ro_cap_seek <= 'd0;
 end
