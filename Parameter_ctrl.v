@@ -18,7 +18,7 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-//使用eeprom实现将上位传递的参数进行一个掉电保存
+//使用eeprom实现将上位机传递的参数进行一个掉电保存
 
 module Parameter_ctrl(
     input           i_clk               ,
@@ -93,10 +93,10 @@ parameter_ram parameter_ram_u0(
     .i_pre_cmd_last          (i_pre_cmd_last        ),
     .i_pre_cmd_valid         (i_pre_cmd_valid       ),
 
-    .o_post_cmd_data        (o_post_cmd_data      ),
-    .o_post_cmd_len         (o_post_cmd_len       ),
-    .o_post_cmd_last        (o_post_cmd_last      ),
-    .o_post_cmd_valid       (o_post_cmd_valid     ),
+    .o_post_cmd_data         (o_post_cmd_data       ),
+    .o_post_cmd_len          (o_post_cmd_len        ),
+    .o_post_cmd_last         (o_post_cmd_last       ),
+    .o_post_cmd_valid        (o_post_cmd_valid      ),
 
     .o_system_run            (o_system_run          ),
     .o_adc_chnnel            (o_adc_chnnel          ),

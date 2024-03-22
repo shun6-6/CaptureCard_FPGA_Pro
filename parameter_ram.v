@@ -33,7 +33,7 @@ module parameter_ram(
     output [7 :0]   o_post_cmd_len          ,
     output          o_post_cmd_last         ,
     output          o_post_cmd_valid        ,
-
+    //从eeprom当中读出的配置信息
     output          o_system_run            ,
     output [7 :0]   o_adc_chnnel            ,
     output [23:0]   o_adc_speed             ,
@@ -61,6 +61,8 @@ module parameter_ram(
 
 /******************************parameter**************************/
 localparam      P_EEPROM_ADDR = 3'b011;
+localparam      P_W             = 1     ,//写数据
+                P_R             = 2     ;//读数据
 /******************************port*******************************/
 
 /******************************machine****************************/
@@ -124,14 +126,6 @@ wire [7 :0]     w_ram_douta             ;
 wire [7 :0]     w_ram_doutb             ;
 wire            w_ram_init_end          ;
 /******************************component**************************/
-// BRAM8x128 para_ram (
-//   .clka     (i_clk      ),
-//   .ena      (r_ram_ena   ),//使能
-//   .wea      (r_ram_wea  ),//写使能
-//   .addra    (r_ram_addra ),//读写地址
-//   .dina     (r_ram_dina  ),//写数据
-//   .douta    (w_ram_douta ) //读数据
-// );
 BRAM8x128 para_ram (
   .clka     (i_clk      ),  
   .ena      (r_ram_ena  ),  
@@ -193,7 +187,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ri_user_read_valid_1d <=  ri_user_read_valid;         
     end
 end
-
+//将输入数据原原本本再发送出去
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         ro_post_cmd_data  <= 'd0;
@@ -208,7 +202,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_post_cmd_valid <= ri_pre_cmd_valid;        
     end
 end
-
+//=============================指令报文解析==================================//
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_cnt <= 'd0;
@@ -252,7 +246,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_cmd_data_valid <= 'd0;
     else if(ri_pre_cmd_last)
         r_cmd_data_valid <= 'd0;
-    else if(r_cnt == 2 && ri_pre_cmd_valid && r_cmd_header && r_cmd_type <= 9) 
+    else if(r_cnt == 2 && ri_pre_cmd_valid && r_cmd_header && r_cmd_type <= 10 && r_cmd_type != 5) 
         r_cmd_data_valid <= 'd1;
     else
         r_cmd_data_valid <= r_cmd_data_valid;
@@ -273,13 +267,13 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_cmd_data <= 'd0;
 end
-//ram
+//===========================将解析出来的数据写入ram==================================
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_ram_ena <= 'd0;   
     else if(r_eeprom_write_cnt == 9 - 1 || (!r_cmd_data_valid & r_cmd_data_valid_1d))
         r_ram_ena <= 'd0;
-    else if(w_op_user_active)//读ram数据写入eeprom
+    else if(w_op_user_active && ro_user_operation_type == 1)//读ram数据写入eeprom
         r_ram_ena <= 'd1;
     else if(r_cmd_data_valid)//将uart dma传入的控制数据写入ram
         r_ram_ena <= 'd1;
@@ -323,6 +317,7 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_ram_dina <= r_cmd_data;
 end
+//====================================将控制信息写入EEPROM=======================================
 //收到上传eeprom指令信号，将控制信息存到eeprom里
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
@@ -387,9 +382,9 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_user_write_valid <= 'd0;
-    else if(ro_user_write_sop)
+    else if(ro_user_write_eop)
         ro_user_write_valid <= 'd0;
-    else if(w_op_user_active) 
+    else if(w_op_user_active && ro_user_operation_type == 1)//1：写
         ro_user_write_valid <= 'd1;
     else
         ro_user_write_valid <= ro_user_write_valid;
@@ -412,18 +407,10 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         ro_user_write_eop <= 'd0;
 end
-//上电读ram
-// always @(posedge i_clk or posedge i_rst)begin
-//     if(i_rst)
-//         ro_system_run <= 'd0;
-//     else if()
-//         ro_system_run <= 'd1;
-//     else
-//         ro_system_run <= ro_system_run;
-// end
+//==========================上电读ram====================================//
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
-        ro_system_run <= 'd0;
+        ro_system_run <= 'd1;
     else if(w_ram_init_end)
         ro_system_run <= 'd1;
     else
@@ -450,10 +437,6 @@ always @(posedge i_clk or posedge i_rst)begin
         r_ram_enb <= 'd1;  
         r_ram_web <= 'd1;        
     end
-    // else if() begin
-    //     r_ram_enb <= 'd1;  
-    //     r_ram_web <= 'd0;        
-    // end
     else begin
         r_ram_enb <= 'd0;  
         r_ram_web <= 'd0;        
@@ -478,7 +461,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_ram_dinb <= 'd0;
 end
 
-//从ram当中拿到数据
+//eeprom数据写入RAM的同时，将这些数据也同步到控制信息输出端口
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         ro_adc_chnnel  <= 'd0;
