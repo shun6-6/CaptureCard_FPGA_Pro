@@ -79,6 +79,7 @@ reg             ro_ctrl_last    ;
 reg             ro_ctrl_valid   ;
 
 reg  [7 :0]     r_cmd_cnt       ;
+reg  [2 :0]     r_header        ;
 /******************************wire*******************************/
 
 /******************************component**************************/
@@ -143,7 +144,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_adc_last  <= 'd0;
         ro_adc_valid <= 'd0;
     end
-    else if(r_cmd_cnt == 1 && ri_cmd_data >= 1 && ri_cmd_data <= 5) begin
+    else if(r_header == 1) begin
         ro_adc_data  <= ri_cmd_data_2d ;
         ro_adc_len   <= ri_cmd_len_2d  ;
         ro_adc_last  <= ri_cmd_last_2d ;
@@ -164,7 +165,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_flash_last  <= 'd0;
         ro_flash_valid <= 'd0;
     end
-    else if(r_cmd_cnt == 1 && ri_cmd_data >= 6 && ri_cmd_data <= 8) begin
+    else if(r_header == 2) begin
         ro_flash_data  <= ri_cmd_data_2d ;
         ro_flash_len   <= ri_cmd_len_2d  ;
         ro_flash_last  <= ri_cmd_last_2d ;
@@ -185,7 +186,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_ctrl_last  <= 'd0;
         ro_ctrl_valid <= 'd0;
     end
-    else if(r_cmd_cnt == 1 && ri_cmd_data > 8) begin
+    else if(r_header == 3) begin
         ro_ctrl_data  <= ri_cmd_data_2d ;
         ro_ctrl_len   <= ri_cmd_len_2d  ;
         ro_ctrl_last  <= ri_cmd_last_2d ;
@@ -198,5 +199,21 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_ctrl_valid <= 'd0;        
     end
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_header <= 'd0;
+    else if(ro_ctrl_last || ro_flash_last || ro_adc_last)
+        r_header <= 'd0;
+    else if(r_cmd_cnt == 1 && ri_cmd_data >= 1 && ri_cmd_data <= 5)
+        r_header <= 'd1;
+    else if(r_cmd_cnt == 1 && ri_cmd_data >= 6 && ri_cmd_data <= 8)
+        r_header <= 'd2;
+    else if(r_cmd_cnt == 1 && ri_cmd_data > 8)
+        r_header <= 'd3;        
+    else
+        r_header <= r_header;
+end
+
 
 endmodule
