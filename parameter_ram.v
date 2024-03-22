@@ -119,7 +119,7 @@ reg  [7 :0]     r_ram_dinb              ;
 reg             r_eeprom_commit         ;
 reg  [15:0]     r_eeprom_write_cnt      ;
 reg  [1 :0]     r_eeprom_run_ctrl       ;
-reg  [7 :0]     r_pkt_cnt               ;
+//reg  [7 :0]     r_pkt_cnt               ;
 /******************************wire*******************************/
 wire            w_op_user_active        ;
 wire [7 :0]     w_ram_douta             ;

@@ -116,10 +116,24 @@ begin:cmd_read_adc
 end
 endtask
 
+task cmd_set_chnnel();
+begin:cmd_set_chnnel
+    r_usr_tx_data  <= 'd0;
+    r_usr_tx_valid <= 'd0;
+    @(posedge w_user_clk);
+    cmd_send_byte(8'h55);//head
+    cmd_send_byte(8'h01);//type
+    cmd_send_byte(8'h01);//length
+    cmd_send_byte(8'h08);//data
+end
+endtask
+
 initial begin
     r_usr_tx_data  = 'd0;
     r_usr_tx_valid = 'd0;
     wait(!rst);
+    repeat(10)@(posedge w_user_clk);
+    cmd_set_chnnel();
     repeat(200)@(posedge w_user_clk);
     cmd_read_adc();
     repeat(200)@(posedge w_user_clk);

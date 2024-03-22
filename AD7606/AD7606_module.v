@@ -119,7 +119,7 @@ AD7606_DATA_pkt AD7606_DATA_pkt_u0(
     .i_user_data_8          (w_user_data_8      ),
     .i_user_valid_8         (w_user_valid_8     ),
  
-    .i_cap_chnnel_num       (8   ),
+    .i_cap_chnnel_num       (w_cap_chnnel_num),
     .i_cap_seek             (w_cap_seek         ),
 
     .o_adc_data             (o_adc_data         ),
