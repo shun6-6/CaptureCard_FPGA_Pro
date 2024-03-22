@@ -37,4 +37,15 @@ UART驱动模块，与上位机进行数据交互。
 解析传递给AD7606的配置信息
 ## 7. AD7606_DATA_pkt
 组包模块，将8通道收集到的数据组成一个数据包的形式
+## 8. AD7606_drive
+AD7606驱动，控制ADC芯片进行采样
+## 9. AD7606_module
+例化上述三个AD7606的相关模块
+## 10. Parameter_ctrl
+参数控制模块，控制配置参数存储以及上电自动配置，包含模块eeprom_drive、parameter_ram
+## 11. eeprom_drive
+EEPROM驱动模块
+## 12. parameter_ram
+将UART传输的控制总线信息原封不动传递给总线分流器，同时在本地对其进行解析，将解析出来的所有控制信息存储到本地RAM，一旦收到上位机发送的上传EEPROM指令时，则将RAM当中的数据上传到EEPROM当中，在下一次上电的时候会将EEPROM当中的数据再次读取到RAM当中，同时将EEPROM当中的数据输出到控制端口
+
 
