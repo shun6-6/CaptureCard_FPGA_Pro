@@ -41,13 +41,11 @@ module CaptureCard_Top(
     output          o_iic_scl       ,
     inout           io_iic_sda      ,
     /*--------FLASH interface--------*/
-    input           clk             ,
     output          o_spi_cs        ,
     output          o_spi_clk       ,
     output          o_spi_mosi      ,
     input           i_spi_miso      
-
-    );
+);
 
 wire            w_clk_50MHz         ;
 wire            w_clk_5MHz          ;
@@ -83,10 +81,16 @@ wire [7 :0]     w_cmd_adc_data      ;
 wire [7 :0]     w_cmd_adc_len       ;
 wire            w_cmd_adc_last      ;
 wire            w_cmd_adc_valid     ;
+wire [7 :0]     w_cmd_post_adc_data ;
+wire [7 :0]     w_cmd_post_adc_len  ;
+wire            w_cmd_post_adc_last ;
+wire            w_cmd_post_adc_valid;
+
 wire [7 :0]     w_cmd_flash_data    ;
 wire [7 :0]     w_cmd_flash_len     ;
 wire            w_cmd_flash_last    ;
 wire            w_cmd_flash_valid   ;
+
 wire [7 :0]     w_cmd_ctrl_data     ;
 wire [7 :0]     w_cmd_ctrl_len      ;
 wire            w_cmd_ctrl_last     ;
@@ -96,6 +100,10 @@ wire [7 :0]     w_adc_data          ;
 wire [7 :0]     w_adc_len           ;
 wire            w_adc_last          ;
 wire            w_adc_valid         ;
+wire [7 :0]     w_adc_dma_data      ;
+wire [7 :0]     w_adc_dma_len       ;
+wire            w_adc_dma_last      ;
+wire            w_adc_dma_valid     ;
 
 wire            w_system_run        ;
 wire [7 :0]     w_adc_chnnel        ;
@@ -174,9 +182,9 @@ Uart_DMA Uart_DMA_u0(
     .i_usr_rx_data          (w_uart_rx_data     ),
     .i_usr_rx_valid         (w_uart_rx_valid    ),
     //dma send data 
-    .i_uart_DMA_tdata       (w_adc_data         ),
-    .i_uart_DMA_tlast       (w_adc_last         ),
-    .i_uart_DMA_tvalid      (w_adc_valid        ), 
+    .i_uart_DMA_tdata       (w_adc_dma_data     ),
+    .i_uart_DMA_tlast       (w_adc_dma_last     ),
+    .i_uart_DMA_tvalid      (w_adc_dma_valid    ), 
     .o_uart_DMA_tready      (), 
     //dma recieve data  
     .o_uart_DMA_rlen        (w_uart_DMA_rlen    ),
@@ -185,25 +193,52 @@ Uart_DMA Uart_DMA_u0(
     .o_uart_DMA_rvalid      (w_uart_DMA_rvalid  )
 );
 //跨时钟域处理 uart DMA数据跨到系统参数管理模块
-Data_Mclk_buf Data_Mclk_buf_uart2bus_mux(
+Data_Mclk_buf Data_Mclk_buf_uart2parameter(
     .i_pre_clk              (w_uart_clk         ),
     .i_pre_rst              (w_uart_rst         ),
-    .i_pre_data             (w_uart_DMA_rlen    ),
-    .i_pre_len              (w_uart_DMA_rdata   ),
+    .i_pre_data             (w_uart_DMA_rdata   ),
+    .i_pre_len              (w_uart_DMA_rlen    ),
     .i_pre_last             (w_uart_DMA_rlast   ),
     .i_pre_valid            (w_uart_DMA_rvalid  ),
 
-    .i_post_clk             (w_uart_clk         ),
-    .i_post_rst             (w_uart_rst         ),
-    .o_post_data            (w_post_cmd_data    ),
-    .o_post_len             (w_post_cmd_len     ),
-    .o_post_last            (w_post_cmd_last    ),
-    .o_post_valid           (w_post_cmd_valid   ) 
+    .i_post_clk             (w_clk_125khz       ),
+    .i_post_rst             (w_clk_125khz_rst   ),
+    .o_post_data            (w_pre_cmd_data     ),
+    .o_post_len             (w_pre_cmd_len      ),
+    .o_post_last            (w_pre_cmd_last     ),
+    .o_post_valid           (w_pre_cmd_valid    ) 
+);
+
+//系统参数管理
+Parameter_ctrl Parameter_ctrl_u0(
+    .i_clk                  (w_clk_125khz       ),
+    .i_rst                  (w_clk_125khz_rst   ),
+
+    .i_pre_cmd_data         (w_pre_cmd_data     ),
+    .i_pre_cmd_len          (w_pre_cmd_len      ),
+    .i_pre_cmd_last         (w_pre_cmd_last     ),
+    .i_pre_cmd_valid        (w_pre_cmd_valid    ),
+        
+    .o_post_cmd_data        (w_post_cmd_data    ),
+    .o_post_cmd_len         (w_post_cmd_len     ),
+    .o_post_cmd_last        (w_post_cmd_last    ),
+    .o_post_cmd_valid       (w_post_cmd_valid   ),
+
+    .o_system_run           (w_system_run       ),
+    .o_adc_chnnel           (w_adc_chnnel       ),
+    .o_adc_speed            (w_adc_speed        ),
+    .o_adc_start            (w_adc_start        ),
+    .o_adc_trig             (w_adc_trig         ),
+    .o_flash_start          (w_flash_start      ),
+    .o_flash_num            (w_flash_num        ),
+
+    .o_iic_scl              (o_iic_scl          ),
+    .io_iic_sda             (io_iic_sda         ) 
 );
 //总线分流器
 BUS_MUX BUS_MUX_u0(
-    .i_clk                  (w_uart_clk         ),
-    .i_rst                  (w_uart_rst         ),
+    .i_clk                  (w_clk_125khz       ),
+    .i_rst                  (w_clk_125khz_rst   ),
 
     .i_cmd_data             (w_post_cmd_data    ),
     .i_cmd_len              (w_post_cmd_len     ),
@@ -226,41 +261,31 @@ BUS_MUX BUS_MUX_u0(
     .o_ctrl_valid           (w_cmd_ctrl_valid   ) 
 );
 
-//系统参数管理
-Parameter_ctrl Parameter_ctrl_u0(
-    .i_clk                  (w_clk_125khz       ),
-    .i_rst                  (w_clk_125khz_rst   ),
+//跨时钟域处理 BUS_MUX数据跨到AD7606_module
+Data_Mclk_buf Data_Mclk_buf_bus_mux2AD7606(
+    .i_pre_clk              (w_clk_125khz       ),
+    .i_pre_rst              (w_clk_125khz_rst   ),
+    .i_pre_data             (w_cmd_adc_data     ),
+    .i_pre_len              (w_cmd_adc_len      ),
+    .i_pre_last             (w_cmd_adc_last     ),
+    .i_pre_valid            (w_cmd_adc_valid    ),
 
-    .i_pre_cmd_data         (),
-    .i_pre_cmd_len          (),
-    .i_pre_cmd_last         (),
-    .i_pre_cmd_valid        (),
-        
-    .o_post_cmd_data        (),
-    .o_post_cmd_len         (),
-    .o_post_cmd_last        (),
-    .o_post_cmd_valid       (),
-
-    .o_system_run           (w_system_run       ),
-    .o_adc_chnnel           (w_adc_chnnel       ),
-    .o_adc_speed            (w_adc_speed        ),
-    .o_adc_start            (w_adc_start        ),
-    .o_adc_trig             (w_adc_trig         ),
-    .o_flash_start          (w_flash_start      ),
-    .o_flash_num            (w_flash_num        ),
-
-    .o_iic_scl              (o_iic_scl          ),
-    .io_iic_sda             (io_iic_sda         ) 
+    .i_post_clk             (w_clk_50MHz        ),
+    .i_post_rst             (w_clk_50MHz_rst    ),
+    .o_post_data            (w_cmd_post_adc_data ),
+    .o_post_len             (w_cmd_post_adc_len  ),
+    .o_post_last            (w_cmd_post_adc_last ),
+    .o_post_valid           (w_cmd_post_adc_valid) 
 );
 
 AD7606_module AD7606_module_u0(
     .i_clk                  (w_clk_50MHz        ),
     .i_rst                  (w_clk_50MHz_rst    ),
 
-    .i_cmd_adc_data         (w_cmd_adc_data     ),
-    .i_cmd_adc_len          (w_cmd_adc_len      ),
-    .i_cmd_adc_last         (w_cmd_adc_last     ),
-    .i_cmd_adc_valid        (w_cmd_adc_valid    ),
+    .i_cmd_adc_data         (w_cmd_post_adc_data ),
+    .i_cmd_adc_len          (w_cmd_post_adc_len  ),
+    .i_cmd_adc_last         (w_cmd_post_adc_last ),
+    .i_cmd_adc_valid        (w_cmd_post_adc_valid),
 
     .i_external_trig        (i_external_trig    ),
     .i_system_run           (w_system_run       ),
@@ -284,6 +309,23 @@ AD7606_module AD7606_module_u0(
     .o_adc_len              (w_adc_len          ),
     .o_adc_last             (w_adc_last         ),
     .o_adc_valid            (w_adc_valid        ) 
+);
+
+//跨时钟域处理 AD7606数据跨到uart_dma
+Data_Mclk_buf Data_Mclk_buf_AD76062dma(
+    .i_pre_clk              (w_clk_50MHz        ),
+    .i_pre_rst              (w_clk_50MHz_rst    ),
+    .i_pre_data             (w_adc_data         ),
+    .i_pre_len              (w_adc_len          ),
+    .i_pre_last             (w_adc_last         ),
+    .i_pre_valid            (w_adc_valid        ),
+
+    .i_post_clk             (w_uart_clk         ),
+    .i_post_rst             (w_uart_rst         ),
+    .o_post_data            (w_adc_dma_data     ),
+    .o_post_len             (w_adc_dma_len      ),
+    .o_post_last            (w_adc_dma_last     ),
+    .o_post_valid           (w_adc_dma_valid    ) 
 );
 
 
