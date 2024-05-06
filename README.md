@@ -10,6 +10,7 @@
 UART驱动模块，与上位机进行数据交互。
 ## 3. Uart_DMA
 接收方向上，将Uart_Drive按字节接收到的数据进行组帧处理，变为与其他模块交互的数据报文，发送方向上，将其他模块发送的数据报文转化为按字节发送的形式。
+
 ![image](/picture/data_format.png#pic_center) 
 
 **前导码** ：0x55
